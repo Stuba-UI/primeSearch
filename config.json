@@ -1,13 +1,21 @@
 {
-    "POP_SIZE": 100,
-    "GENERATIONS": 200,
-    "ELITISM_COUNT": 4,
-    "MAX_MUTATION": 15,
-    "LOG_FILE": "evolution_log.csv",
-    "RANDOM_NEW_INDIVIDUAL_CHANCE": 0.2,
-    "TOURNAMENT_SIZE": 5,
-    "NOVELTY_WEIGHT": 1.0,
-    "FITNESS_WEIGHT": 1.0,
-    "COMPLEXITY_WEIGHT": 0.2,
-    "SEED": 42
+    "population_size": 300,
+    "generations": 1000,
+    "mutation_rate": 0.3,
+    "crossover_rate": 0.7,
+    "elitism": 2,
+    "tournament_size": 2,
+    "operator_set": [
+        "+",
+        "-",
+        "*",
+        "/",
+        "**",
+        "sin",
+        "cos",
+        "log",
+        "exp"
+    ],
+    "num_primes": 100,
+    "neural_model_path": null
 }

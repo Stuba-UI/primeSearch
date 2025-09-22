@@ -10,6 +10,10 @@ Features:
 """
 
 from sympy import isprime
+import csv
+from .prime_data import get_primes
+from .symbolic_formula import generate_random_formula
+from .advanced_fitness import diagnostics
 
 def fitness(formula, primes):
     """
@@ -26,6 +30,17 @@ def fitness(formula, primes):
         except Exception:
             continue
     return score
+
+def evaluate_population(population, primes, csv_path="evolution_log.csv"):
+    with open(csv_path, "w", newline="") as csvfile:
+        fieldnames = ["formula", "strict_hits", "near_hits", "closeness", "variance", "novelty", "complexity", "fitness", "combined_fitness"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for formula in population:
+            diag = diagnostics(formula, primes)
+            row = {k: diag[k] for k in fieldnames if k in diag}
+            row["formula"] = str(formula)
+            writer.writerow(row)
 
 # --- Prime generator ---
 def generate_primes(n):

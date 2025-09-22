@@ -31,6 +31,18 @@ def generate_primes(limit=10000):
     """
     return list(sympy.primerange(2, limit))
 
+def get_primes(n):
+    """
+    Return the first n prime numbers as a list.
+
+    Args:
+        n (int): Number of primes to return.
+
+    Returns:
+        List[int]: The first n primes.
+    """
+    return [int(sympy.prime(i+1)) for i in range(n)]
+
 # ----------------------------
 # 2. Feature extraction
 # ----------------------------

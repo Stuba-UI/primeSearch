@@ -11,93 +11,75 @@ Features:
 - Detailed documentation suitable for research-grade experiments
 """
 
+import numpy as np
 import random
-from deap import base, creator, tools
-from symbolic_formula import random_formula, mutate_formula, crossover_formula
-from fitness_evaluation import fitness
+from .symbolic_formula import generate_random_formula, mutate_formula, crossover_formulas
+from .advanced_fitness import diagnostics
 
-# ----------------------------
-# 1. DEAP setup
-# ----------------------------
+class EvolutionEngine:
+    def __init__(self, config, primes, neural_guidance=None):
+        self.config = config
+        self.primes = primes
+        self.population_size = config.get("population_size", 300)
+        self.generations = config.get("generations", 1000)
+        self.mutation_rate = config.get("mutation_rate", 0.3)
+        self.crossover_rate = config.get("crossover_rate", 0.7)
+        self.elitism = config.get("elitism", 2)
+        self.tournament_size = config.get("tournament_size", 2)
+        self.operator_set = config.get("operator_set", ["+", "-", "*", "/", "**", "sin", "cos", "log", "exp"])
+        self.neural_guidance = neural_guidance
 
-# Fitness and individual definitions
-if not hasattr(creator, "FitnessMax"):
-    creator.create("FitnessMax", base.Fitness, weights=(1.0, 1.0, -1.0))
-if not hasattr(creator, "Individual"):
-    creator.create("Individual", object, fitness=creator.FitnessMax)
+    def initialize_population(self):
+        return [generate_random_formula(self.operator_set) for _ in range(self.population_size)]
 
-def make_individual():
-    ind = creator.Individual()
-    ind.formula = random_formula()
-    return ind
+    def evaluate_population(self, population):
+        return [diagnostics(formula, self.primes) for formula in population]
 
-toolbox = base.Toolbox()
-toolbox.register("individual", make_individual)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    def select_parents(self, population, fitnesses):
+        # Tournament selection
+        selected = []
+        for _ in range(self.population_size):
+            aspirants = random.sample(list(zip(population, fitnesses)), self.tournament_size)
+            winner = max(aspirants, key=lambda x: x[1]['combined_fitness'])
+            selected.append(winner[0])
+        return selected
 
-# Fitness evaluation
-def eval_individual(individual, primes):
-    """
-    Evaluate an individual formula over the provided prime sequence.
-    Returns a tuple for DEAP compatibility.
-    """
-    fit = fitness(individual.formula, primes)
-    return (fit,)
+    def evolve(self):
+        population = self.initialize_population()
+        for gen in range(self.generations):
+            fitnesses = self.evaluate_population(population)
+            # Logging best
+            best_idx = np.argmax([f['combined_fitness'] for f in fitnesses])
+            best_formula = population[best_idx]
+            best_diag = fitnesses[best_idx]
+            print(f"--- Generation {gen+1} ---")
+            print(f"Best formula: {best_formula}")
+            print(f"Combined fitness: {best_diag['combined_fitness']:.3f}")
+            print(f"Novelty: {best_diag['novelty']}, Complexity: {best_diag['complexity']}")
+            print(f"Diagnostics: {best_diag}")
 
-toolbox.register("evaluate", eval_individual)
-toolbox.register("select", tools.selNSGA2)
+            # Elitism
+            elite_indices = np.argsort([f['combined_fitness'] for f in fitnesses])[-self.elitism:]
+            elites = [population[i] for i in elite_indices]
 
-# ----------------------------
-# 2. Neural-Guided Mutation
-# ----------------------------
+            # Selection
+            parents = self.select_parents(population, fitnesses)
 
-def mutate_individual(ind, nn_model=None, features_tensor=None, max_mutation=5, guided_prob=0.5):
-    """
-    Mutate an individual formula.
-    - Uses neural-guided mutation if model & features are provided
-    - Otherwise applies integer-safe stochastic mutation
-    - Returns a new Individual object
-    """
-    formula = ind.formula
+            # Variation
+            next_population = elites.copy()
+            while len(next_population) < self.population_size:
+                if random.random() < self.crossover_rate:
+                    p1, p2 = random.sample(parents, 2)
+                    child = crossover_formulas(p1, p2, self.operator_set)
+                else:
+                    p = random.choice(parents)
+                    child = mutate_formula(p, self.operator_set, self.mutation_rate)
+                next_population.append(child)
 
-    # Neural-guided mutation
-    if nn_model is not None and features_tensor is not None and random.random() < guided_prob:
-        try:
-            suggested_delta = nn_model.predict(features_tensor)
-            formula = formula + int(round(suggested_delta))
-        except Exception:
-            formula = mutate_formula(formula, max_mutation=max_mutation)
-    else:
-        formula = mutate_formula(formula, max_mutation=max_mutation)
+            # Diversity: inject random immigrants
+            for _ in range(max(1, self.population_size // 20)):
+                next_population[random.randint(0, self.population_size - 1)] = generate_random_formula(self.operator_set)
 
-    new_ind = creator.Individual()
-    new_ind.formula = formula
-    return new_ind
+            population = next_population
 
-# ----------------------------
-# 3. Neural-Guided Crossover
-# ----------------------------
-
-def crossover_individuals(ind1, ind2, nn_model=None, features_tensor=None):
-    """
-    Crossover two individuals:
-    - Uses stochastic integer-safe crossover
-    - Optional neural-guided adjustment
-    """
-    formula1 = ind1.formula
-    formula2 = ind2.formula
-
-    # Base stochastic crossover
-    new_formula = crossover_formula(formula1, formula2)
-
-    # Neural-guided adjustment
-    if nn_model is not None and features_tensor is not None:
-        try:
-            delta = nn_model.predict(features_tensor)
-            new_formula = new_formula + int(round(delta))
-        except Exception:
-            pass  # fallback: keep base crossover result
-
-    new_ind = creator.Individual()
-    new_ind.formula = new_formula
-    return new_ind
+        return population, self.evaluate_population(population)

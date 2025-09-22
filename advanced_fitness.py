@@ -17,25 +17,43 @@ def diagnostics(formula, primes):
     for n in range(len(primes)):
         try:
             val = formula.subs('x', n + 1)
-            val = float(val)  # Ensure output is a float
+            val = float(val)
         except Exception:
             val = 0.0
         outputs.append(val)
-    outputs = np.array(outputs, dtype=float)  # Ensure numpy array is float
+    outputs = np.array(outputs, dtype=float)
 
-    strict_hits = sum(int(o == p) for o, p in zip(outputs, primes))
-    closeness = 1 / (1 + sum(abs(o - p) for o, p in zip(outputs, primes)))
+    # Penalize outputs that are negative or not close to integer
+    non_integer_penalty = np.sum(np.abs(outputs - np.round(outputs)))
+    negative_penalty = np.sum(outputs < 0)
+
+    # Main metrics
+    strict_hits = sum(int(np.isclose(o, p, atol=1e-6)) for o, p in zip(outputs, primes))
+    near_hits = sum(int(np.abs(o - p) < 2) for o, p in zip(outputs, primes))
+    mse = np.mean((outputs - primes) ** 2)
+    # Log-transform the MSE for a smoother, more meaningful fitness landscape
+    closeness = -np.log1p(mse)
+
     variance = np.var(outputs)
-    novelty = np.std(outputs)
+    novelty = np.mean(np.abs(np.diff(outputs)))
+    novelty = min(novelty, 1e4)
     complexity = len(str(formula))
 
-    fitness = strict_hits + closeness
-
-    combined_fitness = fitness + novelty - 0.01 * complexity
+    # Fitness: prioritize closeness, allow complexity, reward hits
+    fitness = (
+        1000 * closeness +      # Log-MSE: higher is better, more sensitive
+        1000 * strict_hits +
+        100 * near_hits -
+        0.1 * non_integer_penalty -
+        10 * negative_penalty +
+        0.01 * novelty
+    )
+    combined_fitness = fitness - 0.0001 * complexity  # Even lower complexity penalty
 
     return {
         "outputs": outputs,
         "strict_hits": strict_hits,
+        "near_hits": near_hits,
         "closeness": closeness,
         "variance": variance,
         "novelty": novelty,
