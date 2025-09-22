@@ -44,12 +44,12 @@ cd primeSearch
 
 2. Create and activate a Python virtual environment (recommended) 
 
-Windows
+Windows:
 
 python -m venv venv
 venv\Scripts\activate
 
-Linux / macOS
+Linux / macOS:
 
 python -m venv venv
 source venv/bin/activate
@@ -72,20 +72,20 @@ Edit config.json to set parameters such as:
 This ensures experiments are fully reproducible.
 
 **Run the evolution:**
-Windows
+Windows:
 
 python fitness_evolution.py
 
-Linux / macOS
+Linux / macOS:
 
 python3 fitness_evolution.py
 
 **Visualize evolution progress:**
-Windows
+Windows:
 
 python plot_log.py evolution_log.csv
 
-Linux / macOS
+Linux / macOS:
 
 python3 plot_log.py evolution_log.csv
 
