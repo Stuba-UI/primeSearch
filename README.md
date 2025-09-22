@@ -35,19 +35,59 @@
 
 ---
 
-## Getting Started
+## Installation & Setup
 
-**Install dependencies:**
+### 1. Clone the repository
+```bash
+git clone https://github.com/Stuba-UI/primeSearch
+cd primeSearch
+
+2. Create and activate a Python virtual environment (recommended) 
+
+Windows
+
+python -m venv venv
+venv\Scripts\activate
+
+Linux / macOS
+
+python -m venv venv
+source venv/bin/activate
+
+3. Install python dependencies
 pip install sympy numpy matplotlib pandas
 
-**Configure your experiment:**
-Edit `config.json` to set population size, generations, mutation rates, and other parameters.
+**Configuration**
+
+Edit config.json to set parameters such as:
+
+	-Population size
+
+	-Number of generations
+
+	-Mutation rates
+
+	-Other evolutionary algorithm settings
+
+This ensures experiments are fully reproducible.
 
 **Run the evolution:**
+Windows
+
 python fitness_evolution.py
 
+Linux / macOS
+
+python3 fitness_evolution.py
+
 **Visualize evolution progress:**
+Windows
+
 python plot_log.py evolution_log.csv
+
+Linux / macOS
+
+python3 plot_log.py evolution_log.csv
 
 ---
 
