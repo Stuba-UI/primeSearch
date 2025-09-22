@@ -71,19 +71,19 @@ Edit config.json to set parameters such as:
 
 This ensures experiments are fully reproducible.
 
-**Run the evolution:**
+**Run the evaluation:**
 Windows:
 
-python fitness_evolution.py
+py fitness_evaluation.py
 
 Linux / macOS:
 
-python3 fitness_evolution.py
+python3 fitness_evaluation.py
 
 **Visualize evolution progress:**
 Windows:
 
-python plot_log.py evolution_log.csv
+py plot_log.py evolution_log.csv
 
 Linux / macOS:
 
